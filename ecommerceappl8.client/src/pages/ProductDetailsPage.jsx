@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Box, Button, Container, Grid, Typography } from "@mui/material";
+import { addToCart } from "../services/cartService";
 
 import api from "../services/api";
 
@@ -8,6 +9,24 @@ function ProductDetailsPage() {
   const { id } = useParams();
 
   const [product, setProduct] = useState(null);
+
+  const [quantity, setQuantity] = useState(1);
+
+  const handleAddToCart = async () => {
+    try {
+      await addToCart(
+        1,
+
+        product.id,
+
+        quantity,
+      );
+
+      alert("Product added to cart!");
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   useEffect(() => {
     const getProduct = async () => {
@@ -63,7 +82,38 @@ function ProductDetailsPage() {
 
           <Typography sx={{ mt: 3 }}>Stock: {product.stock}</Typography>
 
-          <Button variant="contained" size="large" sx={{ mt: 4 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              mt: 3,
+            }}
+          >
+            <Button
+              variant="outlined"
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+            >
+              -
+            </Button>
+
+            <Typography>{quantity}</Typography>
+
+            <Button
+              variant="outlined"
+              onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+            >
+              +
+            </Button>
+          </Box>
+
+          <Button
+            variant="contained"
+            size="large"
+            sx={{ mt: 3 }}
+            disabled={product.stock === 0}
+            onClick={handleAddToCart}
+          >
             Add To Cart
           </Button>
         </Grid>
