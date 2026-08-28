@@ -4,9 +4,13 @@ import { Box, Button, Container, Grid, Typography } from "@mui/material";
 import { addToCart } from "../services/cartService";
 
 import api from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 function ProductDetailsPage() {
   const { id } = useParams();
+  const { user } = useAuth();
+
+  const userId = user?.userId;
 
   const [product, setProduct] = useState(null);
 
@@ -15,10 +19,8 @@ function ProductDetailsPage() {
   const handleAddToCart = async () => {
     try {
       await addToCart(
-        1,
-
+        userId,
         product.id,
-
         quantity,
       );
 

@@ -77,6 +77,62 @@ public class AuthController : ControllerBase
         });
     }
 
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(
+    RefreshTokenDto dto)
+    {
+        var oldRefreshToken =
+            await _context.RefreshTokens
+                .Include(x => x.User)
+                .FirstOrDefaultAsync(x =>
+                    x.Token == dto.RefreshToken);
+
+        if (oldRefreshToken is null ||
+            !oldRefreshToken.IsActive)
+        {
+            return Unauthorized(new
+            {
+                message = "Invalid or expired refresh token."
+            });
+        }
+
+        var user = oldRefreshToken.User;
+
+        // Revoke old refresh token
+        oldRefreshToken.RevokedAt = DateTime.UtcNow;
+
+        // Generate new access token
+        var accessToken =
+            await _jwtService.GenerateAccessTokenAsync(user);
+
+        // Generate new refresh token
+        var newRefreshToken =
+            _refreshTokenService.Generate(user.Id);
+
+        _context.RefreshTokens.Add(newRefreshToken);
+
+        await _context.SaveChangesAsync();
+
+        var roles =
+            await _userManager.GetRolesAsync(user);
+
+        return Ok(new AuthResponseDto
+        {
+            AccessToken = accessToken,
+
+            RefreshToken = newRefreshToken.Token,
+
+            AccessTokenExpiresAt =
+                _jwtService.GetAccessTokenExpiration(),
+
+            UserId = user.Id,
+
+            Email = user.Email!,
+
+            Role = roles.FirstOrDefault() ?? "User"
+        });
+    }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login(
         LoginDto dto)
@@ -132,6 +188,33 @@ public class AuthController : ControllerBase
             Email = user.Email!,
 
             Role = roles.FirstOrDefault() ?? "User"
+        });
+    }
+
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(
+    LogoutDto dto)
+    {
+        var refreshToken =
+            await _context.RefreshTokens
+                .FirstOrDefaultAsync(x =>
+                    x.Token == dto.RefreshToken);
+
+        if (refreshToken is null)
+        {
+            return NotFound();
+        }
+
+        if (!refreshToken.IsRevoked)
+        {
+            refreshToken.RevokedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok(new
+        {
+            message = "Logged out successfully."
         });
     }
 }

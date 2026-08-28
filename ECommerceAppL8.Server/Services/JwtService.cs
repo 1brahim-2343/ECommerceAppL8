@@ -71,4 +71,10 @@ public class JwtService : IJwtService
         return new JwtSecurityTokenHandler()
             .WriteToken(token);
     }
+
+    public DateTime GetAccessTokenExpiration()
+    {
+        return DateTime.UtcNow.AddMinutes(
+            _jwtSettings.AccessTokenExpirationMinutes);
+    }
 }

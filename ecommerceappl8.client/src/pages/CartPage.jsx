@@ -20,9 +20,13 @@ import {
   removeFromCart,
   clearCart,
 } from "../services/cartService";
+import { useAuth } from "../context/AuthContext";
 
 function CartPage() {
-  const userId = 1;
+  
+  const {user} = useAuth();
+
+  const userId = user?.userId;
 
   const [cart, setCart] = useState({
     items: [],
